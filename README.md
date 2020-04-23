@@ -45,3 +45,23 @@ fuzz_interface.py接口类提供两个函数接口：
     {'name': 'SELECT 1,2,IF(SUBSTR(@@version,1,1)<5,BENCHMARK(2000000,SHA1(0xDE7EC71F1)),SLEEP(1))/*\'XOR(IF(SUBSTR(@@version,1,1)<5,BENCHMARK(2000000,SHA1(0xDE7EC71F1)),SLEEP(1)))OR\'|"XOR(IF(SUBSTR(@@version,1,1)<5,BENCHMARK(2000000,SHA1(0xDE7EC71F1)),SLEEP(1)))OR"*/ FROM some_table WHERE\\u0000\\u0002\\u0000\\u0000= \\u5c0f\\u660e'}
     
 ```
+
+## 三 补充与修复
+代码里有调用str()函数进行强转换，如果使用的是python2且输入的dict里是unicode的字符，需要转换。这里提供一个函数，在调用fuzz接口时候，先对输入数据做一次字符转换
+
+```
+def unicode_convert(input):
+    """ 为了适配python2 str没法处理unicode的有些字符，所以需要强输入的dict字端全部强行转utf-8
+    :param input:
+    :return:
+    """
+    if isinstance(input, dict):
+        return {unicode_convert(key): unicode_convert(value) for key, value in input.iteritems()}
+    elif isinstance(input, list):
+        return [unicode_convert(element) for element in input]
+    elif isinstance(input, unicode):
+        return input.encode('utf-8')
+    else:
+        return input
+```
+
